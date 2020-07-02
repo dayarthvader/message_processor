@@ -12,11 +12,11 @@
 7. System must handle load in terms of number of concurrent clients and number of concurrent message transaction.
 
 ## Non-functional  
-### 1. Robustness and High-availability  
-    The system must be robust and ensure availabiltity with least down-time.  
-### 2. Performance  
-    The system must ensure clients are served in time with as small RTT as possible
-### 3. Scalability  
-    The system must scale gracefully based on the deployment environment and load
-### 4. Maintainable
-    The source code should be robust and easy to enhance and maintain
+1. Robustness and High-availability  
+   The system must be robust and ensure availabiltity with least down-time.  
+2. Performance  
+   The system must ensure clients are served in time with as small RTT as possible
+3. Scalability  
+   The system must scale gracefully based on the deployment environment and load
+4. Maintainable
+   The source code should be robust and easy to enhance and maintain
