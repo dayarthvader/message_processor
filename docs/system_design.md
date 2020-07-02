@@ -1,6 +1,6 @@
-#System Design  
-#Requirements  
-##Functional  
+# System Design  
+# Requirements  
+## Functional  
 1. A client sends messages to the server  
 2. There can be multiple clients sending messages at the same time.
 3. A client can send any number of messages.
