@@ -1,6 +1,7 @@
 # message_processor
 A simple concurrent message processing server  
 
+# project structure  
 ├── cpp  
 │   ├── CMakeLists.txt -- Main CMake file  
 │   ├── include  
