@@ -2,20 +2,20 @@
 A simple concurrent message processing server  
 
 # project structure  
-├── cpp  
+├── cpp/  
 │   ├── CMakeLists.txt -- Main CMake file  
-│   ├── include  
+│   ├── include/  
 │   │   ├── client     -- External includes if any  
 │   │   ├── interfaces -- Client server interface  
 │   │   └── server     -- External includes  
-│   └── src  
+│   └── src/  
 │       ├── client  
 │       └── server  
-├── docs  
+├── docs/  
 │   ├── profiling.md  
 │   └── system_design.md  
 ├── README.md  
-└── test  
+└── test/  
     └── unittest  
         └── CMakeLists.txt -- Unit test CMake file  
 
