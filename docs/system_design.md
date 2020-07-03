@@ -30,8 +30,7 @@
 One of the effecient methods on waiting on multiple sockets over the network is to use select. In this method, a single thread serves all the client requests by letting the system poll all the active sockets. Although effecient, it has following limitaions.  
 1. Although the client connections are concurrent, the transactions will be served on a first come first serve basis.  
 2. There is a limit to number of connections that can be polled via select. 
-
-    This approach is best suited for server running on a single CPU and serving limited number of clients. 
+<b>This approach is best suited for server running on a single CPU and serving limited number of clients.</b>
 
 ### Option 2 Multithreaded with protected access to the file  
 Most hardware platforms today support multiple CPU cores, It is therefore beneficial to leverage the available computing infrasture to serve multiple clients in parallel (Vertical scaling) however there will be a bottleneck in the processing when more than one thread has to write to the file as the same time. System I/O calls provide no guarentees with respect to atomicity of I/O writes.    
