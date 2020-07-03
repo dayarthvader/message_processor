@@ -29,7 +29,8 @@
 ### Option 1 Single threaded  
 One of the effecient methods on waiting on multiple sockets over the network is to use select. In this method, a single thread serves all the client requests by letting the system poll all the active sockets. Although effecient, it has following limitaions.  
 1. Although the client connections are concurrent, the transactions will be served on a first come first serve basis.  
-2. There is a limit to number of connections that can be polled via select. 
+2. There is a limit to number of connections that can be polled via select.  
+
 <b>This approach is best suited for server running on a single CPU and serving limited number of clients.</b>
 
 ### Option 2 Multithreaded with protected access to the file  
@@ -39,8 +40,7 @@ This approach has following limitations.
 1. The protected access to the file when more than a few threads are trying to synchronise will be very expensive as atomic operations call for cache coherency and OS scheduler will be subject to quite a load when the mutex is unlocked. This creates a performance bottleneck affecting every client transaction.   
 2. Although with this approach we can serve concurrent clients, the transactions endup serialised due to protected single file resource. Thus also less scalable - Amdhal's law shows itself as more clients add up while messages are being written into file.  
 3. The worker threads wait-time depends on the length of the message currently being written, leading to client data impact the performance of the overall system.  
-
-    This approach has performance scalability issues. 
+<b>This approach has performance scalability issues.</b> 
 
 ### Option 3 Multithreaded with  multiple worker threads offloading data to the shared buffer queue and single consumer I/O thread 
 This is an optimisation on top of the Option 2. Here we can consider a shared queued collection of the handles to the buffer poputaled by the woker threads. Here we avoid shared-ownership for the I/O resource itself and move the contention up on to a shared container that all worker threads write to.
@@ -52,7 +52,7 @@ However it comes with the following limitations.
 1. Scaling issue - when the system is under load with messages of varying sixes, we can potentially exhaust the memory if we don't limit the number messages or number of concurrent clients.
 2. The clients expect synchronised communication, it will the system in indeterminate state if the worker threads send the response to the clients just after righting to the queue, this is not what is expected or we have to have another synchronisation mechanism between worker threads and file writer thread. 
 
-    This approach can be considered a candidate design with the above identified limitations.  
+<b> This approach can be considered a candidate design with the above identified limitations. </b>  
 
 ### Option 4. Multi-threaded with workers writing to temporary files and offloading the concatination of the files to single thread.
 This approach removes to need for the in-memory container and instead relies on the operating systems filesystem to acheive lazy processing of the messages. This approach eliminates all the synchronisation issues and thus enabling use to scale the system linearly. The worker threads can close the files once they are done writing.
@@ -64,7 +64,7 @@ Limitations of this approache being.
 
 2. Issue 3 of option 2 resurfaces but this time the length of the message won't affect other clients but itself. Since this is synchronous mode of communication. It should be OK. The client will pay for what it uses.
 
-    This approach too can be a candidate design with identified limitations.
+<b>This approach too can be a candidate design with identified limitations.</b>
 
 ### Option 5. co-routines.  
 Async-io and or co-routines are ideal tools for asynchronous I/O access. There is no native support for it in C. It is available in C++ from C++20. I have no experience in using these tools. Can be considered for experimentation in the future. 
