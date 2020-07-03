@@ -72,7 +72,7 @@ Async-io and or co-routines are ideal tools for asynchronous I/O access. There i
 Option 4 and Option 3 candidates can be compared to chose suitable concurrency pattern
 | Option                | Pros                    | Cons               |
 | --------------------- |:-----------------------:| :-----------------:|
-| Option 3              |No duplicate file writes <br> faster transaction RTT| Capacity and performance scaling issue <br> Meeting the synchronous communication<br>requirement will not cannot be met without compromising on the state of the system|
+| Option 3              |No duplicate file writes <br> faster transaction RTT| Capacity and performance scaling issue <br> Meeting the synchronous communication<br>requirement cannot be met without compromising on the state of the system|
 | Option 4              |Lock free implementation <br> no load on the internal resources as we don't hold any locks and memory for too long <br> resources consumed are purely outside of the process (network and storage) hence enabling linear scaling <br> Ideal for cloud deployment | Duplicate file writes <br> longer transaction RTT compared to Option3. 
 
 ## Application interface.  
