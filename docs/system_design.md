@@ -72,8 +72,7 @@ Async-io and or co-routines are ideal tools for asynchronous I/O access. There i
 Option 4 and Option 3 candidates can be compared to chose suitable concurrency pattern
 | Option                | Pros                    | Cons               |
 | --------------------- |:-----------------------:| :-----------------:|
-| Option 3 | No duplicate file writes  | |  
-             fjjdjsl
+| Option 3              |No duplicate file writes <br> faster transaction RTT|                     |  
 
 ## Application interface.  
 1. Client-generated client-id to be used by the client for client identification. UUID or timestamp based IDs?  
