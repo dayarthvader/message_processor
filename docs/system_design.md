@@ -75,6 +75,9 @@ Option 4 and Option 3 candidates can be compared to chose suitable concurrency p
 | Option 3              |No duplicate file writes <br> faster transaction RTT| Capacity and performance scaling issue <br> Meeting the synchronous communication<br>requirement cannot be met without compromising on the state of the system|
 | Option 4              |Lock free implementation <br> no load on the internal resources as we don't hold any locks and memory for too long <br> resources consumed are purely outside of the process (network and storage) hence enabling linear scaling <br> Ideal for cloud deployment | Duplicate file writes <br> longer transaction RTT compared to Option3. 
 
+1. From the above comparison the favourable choice seems to be option 4. We can implement the same for this round and measure the performance and capacity at various scales.  
+2. Use active objects pattern to implement multi-threading.
+
 ## Application interface.  
 1. Client-generated client-id to be used by the client for client identification. UUID or timestamp based IDs?  
 2. Client to generated messages with sequence numbers or transaction IDs  
