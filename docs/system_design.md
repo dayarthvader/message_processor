@@ -68,6 +68,11 @@ Limitations of this approache being.
 
 ### Option 5. co-routines.  
 Async-io and or co-routines are ideal tools for asynchronous I/O access. There is no native support for it in C. It is available in C++ from C++20. I have no experience in using these tools. Can be considered for experimentation in the future. 
+### Final design - 
+Option 4 and Option 3 candidates can be compared to chose suitable concurrency pattern
+| Option                | Pros                    | Cons               |
+| --------------------- |:-----------------------:| :-----------------:|
+
 
 ## Application interface.  
 1. Client-generated client-id to be used by the client for client identification. UUID or timestamp based IDs?  
