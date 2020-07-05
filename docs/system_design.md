@@ -76,7 +76,9 @@ Option 4 and Option 3 candidates can be compared to chose suitable concurrency p
 | Option 4              |Lock free implementation <br> no load on the internal resources as we don't hold any locks and memory for too long <br> resources consumed are purely outside of the process (network and storage) hence enabling linear scaling <br> Ideal for cloud deployment | Duplicate file writes <br> longer transaction RTT compared to Option3. 
 
 1. From the above comparison the favourable choice seems to be option 4. We can implement the same for this round and measure the performance and capacity at various scales.  
-2. Use active objects pattern to implement multi-threading.
+2. Use construct a pool of worker threads.  
+3. Let one thread schedule the jobs for the workers with the help of a queue.   
+4. Worker threads pick a job, each job lasting one session.   
 
 ## Application interface.  
 1. Client-generated client-id to be used by the client for client identification. UUID or timestamp based IDs?  

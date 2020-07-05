@@ -10,7 +10,15 @@ find_package(spdlog)
 add_subdirectory(external/googletest)
 find_package(gtest)
 
-add_executable(message_processor src/main/main.cpp)
-target_link_libraries(message_processor spdlog gtest)
+
+include_directories("${PROJECT_SOURCE_DIR}/include/")
+include_directories("${PROJECT_SOURCE_DIR}/src/")
+include_directories("${PROJECT_SOURCE_DIR}/external/spdlog/include/")
+
+add_subdirectory("src/server")
+add_subdirectory("src/util")
+
+add_executable(message_processor src/server/main.cpp)
+target_link_libraries(message_processor server util spdlog)
 
 
