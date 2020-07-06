@@ -3,14 +3,13 @@
 #include "spdlog/logger.h"
 #include "util/connection_info.h"
 #include "util/logger.h"
-#include <iostream>
 #include <memory>
 #include <sys/socket.h>
 #include <thread>
 
 using server_ns::TcpSever;
 
-TcpSever::TcpSever(const std::string &port,
+TcpSever::TcpSever(int port,
                    util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue,
                    std::shared_ptr<spdlog::logger> logger)
     : port_(port), job_queue_(job_queue), logger_(logger) {
@@ -18,16 +17,10 @@ TcpSever::TcpSever(const std::string &port,
     logger_->error("Job queue invalid");
     exit(1);
   }
-  if (logger_ == nullptr) {
-    std::cout << "Logger is fucked!\n";
-  }
   server_address_.sin_family = AF_INET;
   server_address_.sin_addr.s_addr = INADDR_ANY;
-  if (port.empty()) {
-    logger_->error("Server Port number is invalid ");
-    exit(1);
-  }
-  server_address_.sin_port = htonl(std::stoi(port));
+  server_address_.sin_port = htons(port_);
+  logger_->error("TCP server assigned {0:d} port", server_address_.sin_port);
   setup();
 }
 

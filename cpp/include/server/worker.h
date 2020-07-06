@@ -5,6 +5,7 @@
 #include "util/buffer.h"
 #include "util/connection_info.h"
 #include "util/shared_queue.h"
+#include <fstream>
 #include <string>
 #include <thread>
 namespace server_ns {
@@ -13,7 +14,8 @@ public:
   Worker(util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue,
          util_ns::SharedQueue<std::string> *writers_queue,
          const std::string &logging_dir)
-      : job_queue_(job_queue), logging_dir_(logging_dir) {
+      : job_queue_(job_queue), writers_queue_(writers_queue),
+        logging_dir_(logging_dir) {
     run();
   };
 
@@ -23,6 +25,7 @@ private:
   util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue_{nullptr};
   util_ns::SharedQueue<std::string> *writers_queue_{nullptr};
   std::string logging_dir_{""};
+  std::ofstream temp_stream_;
   util_ns::Buffer buffer_;
   static const int kMsgCountPerSchedule =
       100; //  Dimention and make it configurable

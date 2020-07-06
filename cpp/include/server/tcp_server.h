@@ -12,8 +12,7 @@
 namespace server_ns {
 class TcpSever {
 public:
-  TcpSever(const std::string &port,
-           util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue,
+  TcpSever(int port, util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue,
            std::shared_ptr<spdlog::logger>);
   ~TcpSever();
   // TcpSever(TcpSever &) = delete;
@@ -31,7 +30,7 @@ private:
   std::shared_ptr<spdlog::logger> logger_{nullptr};
   std::thread accept_thread_;
   bool stop_{false};
-  std::string port_{""};
+  int port_{-1};
   util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue_;
   struct sockaddr_in server_address_;
   int server_sock_fd_{-1};

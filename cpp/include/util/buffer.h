@@ -11,7 +11,7 @@ struct Buffer {
   int buff_len_{0};
   void BuffeLen(int len) {
     if (len > kMsgMaxSize || len < 1) {
-      std::cout << "Bad buffer len, exiting\n";
+      std::cout << "Bad buffer len! " << len << " exiting\n";
       exit(1);
     }
       buff_len_ = len;

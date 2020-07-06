@@ -22,3 +22,5 @@ add_executable(message_processor src/server/main.cpp)
 target_link_libraries(message_processor server util spdlog)
 
 
+add_executable(client src/client/main.cpp)
+target_link_libraries(client spdlog)

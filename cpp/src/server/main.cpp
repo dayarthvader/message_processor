@@ -46,8 +46,7 @@ int main() {
         [&] { Worker(job_queue.get(), writers_queue.get(), log_dir); }));
   }
 
-  auto serving_port{"14000"};
-  logger->info("Starting TCP server on {0:s}", serving_port);
+  auto serving_port{14000};
   TcpSever(serving_port, job_queue.get(), logger).Run();
   return 0;
 }
