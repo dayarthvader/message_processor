@@ -13,7 +13,8 @@ namespace server_ns {
 class TcpSever {
 public:
   TcpSever(const std::string &port,
-           util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue);
+           util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue,
+           std::shared_ptr<spdlog::logger>);
   ~TcpSever();
   // TcpSever(TcpSever &) = delete;
   // TcpSever(TcpSever &&) = delete;

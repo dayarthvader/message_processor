@@ -6,7 +6,7 @@ namespace util_ns {
 struct ConnectionInfo {
   ConnectionInfo(int fd, struct sockaddr_in addr, int len)
       : socket_fd(fd), address(addr), addrlen(len) {}
-  ConnectionInfo();
+  ConnectionInfo() = default;
   int socket_fd;
   struct sockaddr_in address;
   int addrlen;

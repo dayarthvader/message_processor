@@ -1,1 +1,2 @@
-#add_library(util STATIC shared_queue.cpp)
+add_library(util STATIC file_handler.cpp)
+target_link_libraries(util stdc++fs)

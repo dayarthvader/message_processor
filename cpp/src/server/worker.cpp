@@ -3,6 +3,8 @@
 #include "util/buffer.h"
 #include "util/connection_info.h"
 #include <fstream>
+#include <iostream>
+#include <sstream>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
@@ -10,13 +12,14 @@ using server_ns::Worker;
 
 void Worker::run() {
   while (true) {
+    std::stringstream ss;
+    ss << std::this_thread::get_id();
+    std::string file_name{logging_dir_ + ss.str()};
+
     util_ns::ConnectionInfo client_conn;
     job_queue_->FrontAndPop(client_conn);
-    //  Generate unique_file names in the namespace accomodated by uint32_t and
-    //  cycle back
-    std::string file_name{logging_dir_ + tid_str_ + '_' +
-                          std::to_string(file_id_)};
-    file_id_++;
+
+    auto msg_count{0};
     std::ofstream temp_stream(file_name, std::ofstream::binary);
     while (true) {
       auto len = recv(client_conn.socket_fd, buffer_.buffer_.data(),
@@ -32,6 +35,13 @@ void Worker::run() {
       buffer_.BuffeLen(len);
       temp_stream.write(reinterpret_cast<const char *>(buffer_.buffer_.data()),
                         len);
+      msg_count++;
+      if (msg_count >=
+          kMsgCountPerSchedule) { // Co-operative yielding if the client is
+                                  // greedy. Client will be re-scheduled
+        job_queue_->Push(client_conn);
+        break;
+      }
     }
   }
 }

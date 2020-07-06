@@ -1,18 +1,25 @@
 //  MSG PROC 2020
 #include "server/tcp_server.h"
+#include "spdlog/logger.h"
 #include "util/connection_info.h"
+#include "util/logger.h"
+#include <iostream>
+#include <memory>
 #include <sys/socket.h>
 #include <thread>
 
 using server_ns::TcpSever;
 
 TcpSever::TcpSever(const std::string &port,
-                   util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue)
-    : port_(port), job_queue_(job_queue),
-      logger_(spdlog::get(util_ns::logger_ns::server_logger_name)) {
+                   util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue,
+                   std::shared_ptr<spdlog::logger> logger)
+    : port_(port), job_queue_(job_queue), logger_(logger) {
   if (job_queue_ == nullptr) {
     logger_->error("Job queue invalid");
     exit(1);
+  }
+  if (logger_ == nullptr) {
+    std::cout << "Logger is fucked!\n";
   }
   server_address_.sin_family = AF_INET;
   server_address_.sin_addr.s_addr = INADDR_ANY;
@@ -44,8 +51,8 @@ void TcpSever::stop() {
 }
 
 void TcpSever::Run() {
-  auto local_thread{std::thread(&TcpSever::receive_jobs, this)};
-  accept_thread_ = std::move(local_thread);
+  logger_->info("Running the server");
+  accept_thread_ = std::thread([this] { receive_jobs(); });
   if (accept_thread_.joinable()) {
     accept_thread_.join();
     logger_->info("Server going down");
@@ -53,6 +60,7 @@ void TcpSever::Run() {
 }
 
 void TcpSever::receive_jobs() {
+  logger_->info("TCP server awaiting connections");
   int client_sock_fd{-1};
   struct sockaddr_in client_addr;
   auto client_addr_len{sizeof(client_addr)};
