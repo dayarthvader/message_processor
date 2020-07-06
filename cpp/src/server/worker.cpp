@@ -1,13 +1,17 @@
 //  MSG PROC 2020
 #include "server/worker.h"
+#include "server/msg_proc.h"
 #include "util/buffer.h"
 #include "util/connection_info.h"
+#include <cstring>
 #include <fstream>
 #include <iostream>
 #include <sstream>
 #include <string>
 #include <sys/socket.h>
 #include <sys/types.h>
+using server_ns::MsgProc;
+using server_ns::MsgResp;
 using server_ns::Worker;
 
 void Worker::run() {
@@ -33,9 +37,13 @@ void Worker::run() {
         break;
       }
       buffer_.BuffeLen(len);
-      temp_stream.write(reinterpret_cast<const char *>(buffer_.buffer_.data()),
-                        len);
+      MsgProc req{buffer_};
+      temp_stream.write(
+          req.Stringize().c_str(),
+          len); //  Might be a bit of overhead to pretty print the message
       msg_count++;
+      MsgResp res(req.ClientId(), req.MessageId());
+      send_response(client_conn, res);
       if (msg_count >=
           kMsgCountPerSchedule) { // Co-operative yielding if the client is
                                   // greedy. Client will be re-scheduled
@@ -44,4 +52,16 @@ void Worker::run() {
       }
     }
   }
+}
+
+void Worker::send_response(const util_ns::ConnectionInfo &conn_info,
+                           MsgResp &resp) {
+  util_ns::Buffer send_buffer_; //  Wastage of space, use send specific buffers?
+  (*reinterpret_cast<uint32_t *>(send_buffer_.buffer_.data())) =
+      htonl(resp.ClientId());
+  (*reinterpret_cast<uint32_t *>(send_buffer_.buffer_.data() +
+                                 sizeof(uint32_t))) = htonl(resp.MessageId());
+  send(conn_info.socket_fd,
+       reinterpret_cast<unsigned char *>(send_buffer_.buffer_.data()),
+       sizeof(resp), 0); // Todo (Daya) error check and log
 }

@@ -1,6 +1,7 @@
 //  MSG PROC 2020
 #ifndef MESSAGE_PROCESSOR_CPP_INCLUDE_SERVER_WORKER_H_
 #define MESSAGE_PROCESSOR_CPP_INCLUDE_SERVER_WORKER_H_
+#include "server/msg_resp.h"
 #include "util/buffer.h"
 #include "util/connection_info.h"
 #include "util/shared_queue.h"
@@ -18,6 +19,7 @@ public:
 
 private:
   void run();
+  void send_response(const util_ns::ConnectionInfo &, server_ns::MsgResp &resp);
   util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue_{nullptr};
   util_ns::SharedQueue<std::string> *writers_queue_{nullptr};
   std::string logging_dir_{""};
