@@ -79,19 +79,25 @@ int main(int argc, char **argv) {
     exit(1);
   }
   const char payload[] = "Old McDonald had a farm. eeya eeya yo!";
-  interfaces_ns::MsgProc send_msg;
-  send_msg.header.client_id = htonl(client_id);
-  send_msg.header.message_len = std::strlen(&payload[0]);
-  send_msg.payload = new unsigned char[send_msg.header.message_len];
-  std::memcpy(send_msg.payload, payload, send_msg.header.message_len);
-  auto total_length{
-      sizeof(send_msg.header.client_id) + sizeof(send_msg.header.message_id) +
-      sizeof(send_msg.header.message_len) + send_msg.header.message_len};
+  auto payload_len{std::strlen(&payload[0])};
+  util_ns::Buffer send_buffer;
+
+  *reinterpret_cast<uint32_t *>(send_buffer.buffer_.data()) = htonl(client_id);
+  *reinterpret_cast<uint32_t *>(send_buffer.buffer_.data() + sizeof(client_id) +
+                                sizeof(message_id)) = htons(payload_len);
+  std::memcpy(send_buffer.buffer_.data() + sizeof(interfaces_ns::MsgProcHeader),
+              payload, payload_len);
+  auto total_length{sizeof(interfaces_ns::MsgProcHeader::client_id) +
+                    sizeof(interfaces_ns::MsgProcHeader::message_id) +
+                    sizeof(interfaces_ns::MsgProcHeader::message_len) +
+                    payload_len};
   util_ns::Buffer recv_buff;
   // measure average RTT and log
   for (int i = 0; i < num_msg; i++) {
-    send_msg.header.message_id = htonl(message_id++);
-    if (send(client_fd, &send_msg, total_length, 0) == -1) {
+    *reinterpret_cast<uint32_t *>(
+        send_buffer.buffer_.data() +
+        sizeof(interfaces_ns::MsgProcHeader::client_id)) = htonl(message_id++);
+    if (send(client_fd, send_buffer.buffer_.data(), total_length, 0) == -1) {
       filelog->error("Send failed {0:s} exiting", strerror(errno));
       // handle reattempts based on errorno
     }

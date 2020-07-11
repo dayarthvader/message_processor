@@ -17,11 +17,11 @@ void Worker::run() {
   while (true) {
     std::stringstream ss;
     ss << std::this_thread::get_id();
-    std::string file_name{logging_dir_ + ss.str()};
 
     util_ns::ConnectionInfo client_conn;
     job_queue_->FrontAndPop(client_conn);
-    std::cout << "Popped\n";
+    std::string file_name{logging_dir_ + ss.str() + "_" +
+                          std::to_string(session_id_++)};
 
     auto msg_count{0};
     temp_stream_.open(file_name, std::ofstream::binary);
@@ -32,7 +32,6 @@ void Worker::run() {
         if (temp_stream_.is_open()) {
           temp_stream_.close();
         }
-        std::cout << "received len: " << len << '\n';
         // enque into the writers queue
         writers_queue_->Push(file_name);
         break;

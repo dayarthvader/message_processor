@@ -27,6 +27,7 @@ private:
   std::string logging_dir_{""};
   std::ofstream temp_stream_;
   util_ns::Buffer buffer_;
+  uint16_t session_id_{0};
   static const int kMsgCountPerSchedule =
       100; //  Dimention and make it configurable
 };

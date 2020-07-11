@@ -20,7 +20,7 @@ TcpSever::TcpSever(int port,
   server_address_.sin_family = AF_INET;
   server_address_.sin_addr.s_addr = INADDR_ANY;
   server_address_.sin_port = htons(port_);
-  logger_->error("TCP server assigned {0:d} port", server_address_.sin_port);
+  logger_->error("TCP server assigned {0:d} port", port_);
   setup();
 }
 
@@ -65,6 +65,12 @@ void TcpSever::receive_jobs() {
       logger_->error("Accept failed {:s}", strerror(errno));
       stop_ = true;
     }
+    struct timeval tv = {1, 0};
+    if (setsockopt(client_sock_fd, SOL_SOCKET, SO_RCVTIMEO,
+                   (struct timeval *)&tv, sizeof(struct timeval)) == -1) {
+      logger_->error("Setting non-blocking recv timeout for client failed");
+      continue;
+    }
     auto local{
         util_ns::ConnectionInfo(client_sock_fd, client_addr, client_addr_len)};
     job_queue_->Push(local);
@@ -78,7 +84,11 @@ void TcpSever::setup() {
   auto option{1};
   if (setsockopt(server_sock_fd_, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
                  &option, sizeof(option)) == -1) {
-    exit_failure("Setting up socket");
+    exit_failure("Setting up socket re-use options failed");
+  }
+  if (setsockopt(server_sock_fd_, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT,
+                 &option, sizeof(option)) == -1) {
+    exit_failure("Setting up socket re-use options failed");
   }
 
   if (bind(server_sock_fd_, reinterpret_cast<sockaddr *>(&server_address_),
@@ -86,7 +96,8 @@ void TcpSever::setup() {
     exit_failure("Bind failed");
   }
 
-  if (listen(server_sock_fd_, 5) == -1) {
+  if (listen(server_sock_fd_, SOMAXCONN) ==
+      -1) { //  Allow as many concurrent connections as you can
     exit_failure("Listen failed");
   }
   // This affects the performance, tune the
