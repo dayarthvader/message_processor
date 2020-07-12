@@ -4,7 +4,6 @@
 #include "util/buffer.h"
 #include "util/connection_info.h"
 #include <cstring>
-#include <iostream>
 #include <sstream>
 #include <string>
 #include <sys/socket.h>
@@ -25,8 +24,9 @@ void Worker::run() {
 
     auto msg_count{0};
     temp_stream_.open(file_name, std::ofstream::binary);
+    msg_count = 0;
     while (true) {
-      auto len = recv(client_conn.socket_fd, buffer_.buffer_.data(),
+      auto len = recv(client_conn.socket_fd, buffer_->buffer_.data(),
                       util_ns::kMsgMaxSize, 0);
       if (len == -1 || len == 0) { // end of stream or timeout
         if (temp_stream_.is_open()) {
@@ -36,17 +36,20 @@ void Worker::run() {
         writers_queue_->Push(file_name);
         break;
       }
-      buffer_.BuffeLen(len);
-      MsgProc req{buffer_};
-      temp_stream_.write(
-          req.Stringize().c_str(),
-          len); //  Might be a bit of overhead to pretty print the message
+      buffer_->BuffeLen(len);
+      MsgProc req{buffer_.get()};
+      auto writeStr{req.Stringize()};
+      temp_stream_.write(writeStr.c_str(),
+                         writeStr.size()); //  Might be a bit of overhead to
+                                           //  pretty print the message
       msg_count++;
       MsgResp res(req.ClientId(), req.MessageId());
       send_response(client_conn, res);
       if (msg_count >=
           kMsgCountPerSchedule) { // Co-operative yielding if the client is
-                                  // greedy. Client will be re-scheduled
+        if (temp_stream_.is_open()) {
+          temp_stream_.close();
+        }
         job_queue_->Push(client_conn);
         break;
       }

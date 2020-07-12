@@ -1,12 +1,15 @@
-// MSG PROC 2020
+/// MSG PROC 2020
 #include "interfaces/msg_proc_interface.h"
 #include "util/buffer.h"
+#include "util/encode_decode.h"
 #include "util/logger.h"
 #include <arpa/inet.h>
 #include <cstdlib>
 #include <cstring>
 #include <getopt.h>
+#include <iomanip>
 #include <iostream>
+#include <memory>
 #include <string>
 #include <sys/socket.h>
 
@@ -79,25 +82,23 @@ int main(int argc, char **argv) {
     exit(1);
   }
   const char payload[] = "Old McDonald had a farm. eeya eeya yo!";
-  auto payload_len{std::strlen(&payload[0])};
-  util_ns::Buffer send_buffer;
-
-  *reinterpret_cast<uint32_t *>(send_buffer.buffer_.data()) = htonl(client_id);
-  *reinterpret_cast<uint32_t *>(send_buffer.buffer_.data() + sizeof(client_id) +
-                                sizeof(message_id)) = htons(payload_len);
-  std::memcpy(send_buffer.buffer_.data() + sizeof(interfaces_ns::MsgProcHeader),
-              payload, payload_len);
-  auto total_length{sizeof(interfaces_ns::MsgProcHeader::client_id) +
-                    sizeof(interfaces_ns::MsgProcHeader::message_id) +
-                    sizeof(interfaces_ns::MsgProcHeader::message_len) +
-                    payload_len};
+  uint16_t payload_len{static_cast<uint16_t>(std::strlen(payload))};
+  std::unique_ptr<util_ns::Buffer> send_buffer =
+      std::make_unique<util_ns::Buffer>();
+  auto total_length{sizeof(interfaces_ns::MsgProcHeader) + payload_len};
   util_ns::Buffer recv_buff;
   // measure average RTT and log
+  message_id = 0;
   for (int i = 0; i < num_msg; i++) {
-    *reinterpret_cast<uint32_t *>(
-        send_buffer.buffer_.data() +
-        sizeof(interfaces_ns::MsgProcHeader::client_id)) = htonl(message_id++);
-    if (send(client_fd, send_buffer.buffer_.data(), total_length, 0) == -1) {
+    std::memset(send_buffer->buffer_.data(), 0, util_ns::kMsgMaxSize);
+    util_ns::encode_uint32(send_buffer.get(), 0, (client_id));
+    util_ns::encode_uint32(send_buffer.get(), sizeof(uint32_t), (i));
+    util_ns::encode_uint16(send_buffer.get(), sizeof(uint32_t) * 2,
+                           static_cast<uint16_t>(payload_len));
+    std::memcpy(send_buffer->buffer_.data() +
+                    sizeof(interfaces_ns::MsgProcHeader),
+                payload, payload_len);
+    if (send(client_fd, send_buffer->buffer_.data(), total_length, 0) == -1) {
       filelog->error("Send failed {0:s} exiting", strerror(errno));
       // handle reattempts based on errorno
     }
@@ -109,4 +110,4 @@ int main(int argc, char **argv) {
     filelog->info("{0:s}", recv_buff.buffer_.data());
   }
   return 0;
-}
+  }
