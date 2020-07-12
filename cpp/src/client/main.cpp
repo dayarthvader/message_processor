@@ -109,5 +109,6 @@ int main(int argc, char **argv) {
     }
     filelog->info("{0:s}", recv_buff.buffer_.data());
   }
+  shutdown(client_id, 2);
   return 0;
   }

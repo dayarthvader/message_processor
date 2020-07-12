@@ -4,6 +4,7 @@
 #include "util/buffer.h"
 #include "util/connection_info.h"
 #include <cstring>
+#include <iostream>
 #include <sstream>
 #include <string>
 #include <sys/socket.h>
@@ -50,6 +51,8 @@ void Worker::run() {
         if (temp_stream_.is_open()) {
           temp_stream_.close();
         }
+        // enque into the writers queue
+        writers_queue_->Push(file_name);
         job_queue_->Push(client_conn);
         break;
       }

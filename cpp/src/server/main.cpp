@@ -1,4 +1,5 @@
 // MSG PROC 2020
+#include "server/file_accumulator.h"
 #include "server/tcp_server.h"
 #include "server/worker.h"
 #include "util/connection_info.h"
@@ -9,6 +10,7 @@
 #include <thread>
 #include <vector>
 
+using server_ns::FileAccumulator;
 using server_ns::TcpSever;
 using server_ns::Worker;
 using util_ns::ConnectionInfo;
@@ -37,6 +39,8 @@ int main() {
 
   auto job_queue{std::make_unique<SharedQueue<ConnectionInfo>>()};
   auto writers_queue{std::make_unique<SharedQueue<std::string>>()};
+  std::thread file_accumulator_thread{
+      [&] { FileAccumulator file_accumulator(writers_queue.get(), log_dir); }};
 
   auto max_threads{std::thread::hardware_concurrency()};
   logger->info("Setting up platform supported {0:d} workers", max_threads);

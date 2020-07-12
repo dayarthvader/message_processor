@@ -27,6 +27,6 @@ std::string MsgProc::Stringize() {
      << std::string(reinterpret_cast<char *>(msg_.payload),
                     msg_.header.message_len)
      << '\n';
-  std::cout << ss.str();
+  //  std::cout << ss.str();
   return ss.str();
 }
