@@ -31,7 +31,7 @@ private:
   std::unique_ptr<util_ns::Buffer> buffer_{nullptr};
   uint16_t session_id_{0};
   static const int kMsgCountPerSchedule =
-      100; //  Dimention and make it configurable
+      1000; //  Dimention and make it configurable
 };
 } // namespace server_ns
 #endif  //  MESSAGE_PROCESSOR_CPP_INCLUDE_SERVER_WORKER_H_

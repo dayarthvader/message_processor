@@ -4,6 +4,7 @@
 #include "util/encode_decode.h"
 #include "util/logger.h"
 #include <arpa/inet.h>
+#include <chrono>
 #include <cstdlib>
 #include <cstring>
 #include <getopt.h>
@@ -63,25 +64,32 @@ int main(int argc, char **argv) {
 
   auto filelog =
       spdlog::basic_logger_mt(util_ns::logger_ns::client_logger_name,
-                              util_ns::logger_ns::client_logger_file_name);
+                              util_ns::logger_ns::client_logger_file_name +
+                                  std::string(".") + std::to_string(client_id));
   spdlog::set_default_logger(filelog);
   spdlog::flush_on(spdlog::level::info);
   serv_addr.sin_port = htons(server_port);
   if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    filelog->error("Socket creation failed {0:s} exiting", strerror(errno));
+    filelog->error("{0:d} socket {0:s}", client_id, strerror(errno));
     exit(1);
   }
   if (inet_pton(AF_INET, server_ip.c_str(), &serv_addr.sin_addr) <= 0) {
-    filelog->error("Server Ip address error {0:s} exiting", strerror(errno));
+    filelog->error("{0:d} Server address {0:s}", client_id, strerror(errno));
     exit(1);
   }
   // measure connect time and log
+  auto connect_begin = std::chrono::steady_clock::now();
   if (connect(client_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) <
       0) {
-    filelog->error("Connect failed {0:s} exiting", strerror(errno));
+    filelog->error("{0:d} Connect {0:s}", client_id, strerror(errno));
     exit(1);
   }
-  const char payload[] = "Old McDonald had a farm. eeya eeya yo!";
+  auto connect_end = std::chrono::steady_clock::now();
+  auto connec_time = std::chrono::duration_cast<std::chrono::microseconds>(
+                         connect_end - connect_begin)
+                         .count();
+  filelog->info("{0:d} connect time us {1:d}", client_id, connec_time);
+  const char payload[] = "Message processing client message";
   uint16_t payload_len{static_cast<uint16_t>(std::strlen(payload))};
   std::unique_ptr<util_ns::Buffer> send_buffer =
       std::make_unique<util_ns::Buffer>();
@@ -89,6 +97,8 @@ int main(int argc, char **argv) {
   util_ns::Buffer recv_buff;
   // measure average RTT and log
   message_id = 0;
+  uint32_t rtt_cumulative{0};
+  double average_rtt{0};
   for (int i = 0; i < num_msg; i++) {
     std::memset(send_buffer->buffer_.data(), 0, util_ns::kMsgMaxSize);
     util_ns::encode_uint32(send_buffer.get(), 0, (client_id));
@@ -98,6 +108,8 @@ int main(int argc, char **argv) {
     std::memcpy(send_buffer->buffer_.data() +
                     sizeof(interfaces_ns::MsgProcHeader),
                 payload, payload_len);
+    auto send_time = std::chrono::steady_clock::now();
+    // filelog->info("send_time {0:d}", send_time.time_since_epoch().count());
     if (send(client_fd, send_buffer->buffer_.data(), total_length, 0) == -1) {
       filelog->error("Send failed {0:s} exiting", strerror(errno));
       // handle reattempts based on errorno
@@ -107,8 +119,17 @@ int main(int argc, char **argv) {
       filelog->error("Recv failed {0:s} exiting", strerror(errno));
       // handle reattempts based on errorno
     }
-    filelog->info("{0:s}", recv_buff.buffer_.data());
+    auto recv_time = std::chrono::steady_clock::now();
+    rtt_cumulative += std::chrono::duration_cast<std::chrono::microseconds>(
+                          recv_time - send_time)
+                          .count();
+    //    filelog->info("recv_time {0:d} rtt_cumulative {1:d}",
+    //                 recv_time.time_since_epoch().count(), rtt_cumulative);
+    // filelog->info("{0:s}", recv_buff.buffer_.data());
   }
+  average_rtt = rtt_cumulative / num_msg;
+  filelog->info("{0:d} average_rtt us {1:f}", client_id, average_rtt);
   shutdown(client_id, 2);
+  std::cout << client_id << ',' << connec_time << ',' << average_rtt << '\n';
   return 0;
   }

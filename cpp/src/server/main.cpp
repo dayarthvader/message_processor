@@ -40,7 +40,7 @@ int main() {
   auto job_queue{std::make_unique<SharedQueue<ConnectionInfo>>()};
   auto writers_queue{std::make_unique<SharedQueue<std::string>>()};
   std::thread file_accumulator_thread{
-      [&] { FileAccumulator file_accumulator(writers_queue.get(), log_dir); }};
+      [&] { FileAccumulator file_accumulator(writers_queue.get(), logger); }};
 
   auto max_threads{std::thread::hardware_concurrency()};
   logger->info("Setting up platform supported {0:d} workers", max_threads);
@@ -51,6 +51,18 @@ int main() {
   }
 
   auto serving_port{14000};
-  TcpSever(serving_port, job_queue.get(), logger).Run();
+  TcpSever tcp_server(serving_port, job_queue.get(), logger);
+  tcp_server.Run();
+  // Todo (Daya)
+  // The below thread cleanup should ideally go as signal handler for
+  // graceful shutdown also add stop signal to idividual threads
+  if (file_accumulator_thread.joinable()) {
+    file_accumulator_thread.join();
+  }
+  for (auto &thread : thread_pool) {
+    if (thread.joinable()) {
+      thread.join();
+    }
+  }
   return 0;
 }
