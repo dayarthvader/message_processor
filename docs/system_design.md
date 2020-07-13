@@ -6,11 +6,11 @@
 1. A client sends messages to the server  
 2. There can be multiple clients sending messages at the same time.
 3. A client can send any number of messages.
-4. Each message should be acknowledged with an ACK or a NACK
+4. Each message should be acknowledged with an ACK
 5. Data integrity must be kept up.  
 6. All messages should be logged to a single file. 
 7. System must handle load in terms of number of concurrent clients and number of concurrent message transaction.
-8. Client can send messages of any length capped to a maximum number of bytes
+8. Client can send messages of any length capped at a maximum number of bytes
 
 ## Non-functional  
 1. Stability and High-availability  
@@ -43,13 +43,13 @@ This approach has following limitations.
 <b>This approach has performance scalability issues.</b> 
 
 ### Option 3 Multithreaded with  multiple worker threads offloading data to the shared buffer queue and single consumer I/O thread 
-This is an optimisation on top of the Option 2. Here we can consider a shared queued collection of the handles to the buffer poputaled by the woker threads. Here we avoid shared-ownership for the I/O resource itself and move the contention up on to a shared container that all worker threads write to.
+This is an optimisation on top of the Option 2. Here we can consider a shared queued collection of the handles to the buffer poputaled by the worker threads. Here we avoid shared-ownership for the I/O resource itself and move the contention up on to a shared container that all worker threads write to.
 
 This approach still has to manage concurrent access to the shared in-memory queue. And an additional global condition variable to be used for the threads to synchronise access to write to the queue. It has the below two improvements over the option 2.
 1. Since the threads write to in-memory container, it is considerably faster for the threads to complete the processing.
 2. Since we're only writing handles to the shared container, (3) the wait time issue in option 2 is overcome. Constant waiting time.
 However it comes with the following limitations.
-1. Scaling issue - when the system is under load with messages of varying sixes, we can potentially exhaust the memory if we don't limit the number messages or number of concurrent clients.
+1. Scaling issue - when the system is under load with messages of varying sizes, we can potentially exhaust the memory if we don't limit the number messages or number of concurrent clients.
 2. The clients expect synchronised communication, it will the system in indeterminate state if the worker threads send the response to the clients just after righting to the queue, this is not what is expected or we have to have another synchronisation mechanism between worker threads and file writer thread. 
 
 <b> This approach can be considered a candidate design with the above identified limitations. </b>  
@@ -57,12 +57,14 @@ However it comes with the following limitations.
 ### Option 4. Multi-threaded with workers writing to temporary files and offloading the concatination of the files to single thread.
 This approach removes to need for the in-memory container and instead relies on the operating systems filesystem to acheive lazy processing of the messages. This approach eliminates all the synchronisation issues and thus enabling use to scale the system linearly. The worker threads can close the files once they are done writing.
 
-This lock-free approach resolve the issues with perfomance and capacity scaling to a large extent and enable us to scale the sytem as needed by controlling the deployment environment. Also issue 2 of option 3 is surpassed.  
+This lock-free approach resolve the issues with perfomance and capacity scaling to a large extent and enable us to scale the sytem as needed by controlling the deployment environment. Also issue 2 of option 3 is surpassed. The philosophy being, we provide a fair chance to all connected clients for service and provide a "fastpath" to their own chunks of server resources. 
 
 Limitations of this approache being.
 1. There will duplicate writes in the filesystem as we move the messages from temporary buckets to final file. This duplication however is better than saving the buffers in-memory as in option 3 as there is no queue of buffers in the memory. Hard-disk storages are cheaper than the RAMs. Makes it ideal for cloud depoyment.
 
 2. Issue 3 of option 2 resurfaces but this time the length of the message won't affect other clients but itself. Since this is synchronous mode of communication. It should be OK. The client will pay for what it uses.
+
+3. The message order not strictly maintained. This can be overcome if the client messages are timestamped and the output file can be sorted in the order of time in post processing.
 
 <b>This approach too can be a candidate design with identified limitations.</b>
 
@@ -78,7 +80,9 @@ Option 4 and Option 3 candidates can be compared to chose suitable concurrency p
 1. From the above comparison the favourable choice seems to be option 4. We can implement the same for this round and measure the performance and capacity at various scales.  
 2. Use construct a pool of worker threads.  
 3. Let one thread schedule the jobs for the workers with the help of a queue.   
-4. Worker threads pick a job, each job lasting one session.   
+4. Worker threads pick a job, each job lasting one session.
+5. Worker threads write messages to temporary files on the disk and schedule filenames for concatenation.
+6. File accumulator thread accumulates all temporary files.
 
 ## Application interface.  
 1. Client-generated client-id to be used by the client for client identification. UUID or timestamp based IDs?  
@@ -89,3 +93,8 @@ Option 4 and Option 3 candidates can be compared to chose suitable concurrency p
 1. Use TCP for transport as system is not error tolerant, data integrity to be kept up.  
 2. Use TCP for transport as clients can send messages in bulk, it mimics a session oriented or connection oriented connection  
 3. TCP timeout can be used as end of session.
+
+## Logging
+1. spdlog framework is one of the best logging library for C++.
+Can be chosen as it is available in many packages, fast, supports formatting and thread safe.
+
