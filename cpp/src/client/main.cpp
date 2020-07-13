@@ -70,18 +70,18 @@ int main(int argc, char **argv) {
   spdlog::flush_on(spdlog::level::info);
   serv_addr.sin_port = htons(server_port);
   if ((client_fd = socket(AF_INET, SOCK_STREAM, 0)) == -1) {
-    filelog->error("{0:d} socket {0:s}", client_id, strerror(errno));
+    filelog->error("{0:d} socket {1:s}", client_id, strerror(errno));
     exit(1);
   }
   if (inet_pton(AF_INET, server_ip.c_str(), &serv_addr.sin_addr) <= 0) {
-    filelog->error("{0:d} Server address {0:s}", client_id, strerror(errno));
+    filelog->error("{0:d} Server address {1:s}", client_id, strerror(errno));
     exit(1);
   }
   // measure connect time and log
   auto connect_begin = std::chrono::steady_clock::now();
   if (connect(client_fd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) <
       0) {
-    filelog->error("{0:d} Connect {0:s}", client_id, strerror(errno));
+    filelog->error("{0:d} Connect {1:s}", client_id, strerror(errno));
     exit(1);
   }
   auto connect_end = std::chrono::steady_clock::now();
@@ -97,8 +97,7 @@ int main(int argc, char **argv) {
   util_ns::Buffer recv_buff;
   // measure average RTT and log
   message_id = 0;
-  uint32_t rtt_cumulative{0};
-  double average_rtt{0};
+  uint32_t max_rtt{0};
   for (int i = 0; i < num_msg; i++) {
     std::memset(send_buffer->buffer_.data(), 0, util_ns::kMsgMaxSize);
     util_ns::encode_uint32(send_buffer.get(), 0, (client_id));
@@ -120,16 +119,18 @@ int main(int argc, char **argv) {
       // handle reattempts based on errorno
     }
     auto recv_time = std::chrono::steady_clock::now();
-    rtt_cumulative += std::chrono::duration_cast<std::chrono::microseconds>(
-                          recv_time - send_time)
-                          .count();
-    //    filelog->info("recv_time {0:d} rtt_cumulative {1:d}",
-    //                 recv_time.time_since_epoch().count(), rtt_cumulative);
+    auto rtt{std::chrono::duration_cast<std::chrono::microseconds>(recv_time -
+                                                                   send_time)
+                 .count()};
+    if (rtt > max_rtt) {
+      max_rtt = rtt;
+    }
+    //    filelog->info("recv_time {0:d} max_rtt {1:d}",
+    //                 recv_time.time_since_epoch().count(), max_rtt);
     // filelog->info("{0:s}", recv_buff.buffer_.data());
   }
-  average_rtt = rtt_cumulative / num_msg;
-  filelog->info("{0:d} average_rtt us {1:f}", client_id, average_rtt);
+  filelog->info("{0:d} max_rtt us {1:d}", client_id, max_rtt);
   shutdown(client_id, 2);
-  std::cout << client_id << ',' << connec_time << ',' << average_rtt << '\n';
+  std::cout << client_id << ',' << connec_time << ',' << max_rtt << '\n';
   return 0;
   }
