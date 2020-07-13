@@ -13,6 +13,14 @@ using server_ns::MsgProc;
 using server_ns::MsgResp;
 using server_ns::Worker;
 
+void Worker::end_processing(const std::string &file_name) {
+  if (temp_stream_.is_open()) {
+    temp_stream_.close();
+  }
+  // enque into the writers queue
+  writers_queue_->Push(file_name);
+}
+
 void Worker::run() {
   while (true) {
     std::stringstream ss;
@@ -30,11 +38,7 @@ void Worker::run() {
       auto len = recv(client_conn.socket_fd, buffer_->buffer_.data(),
                       util_ns::kMsgMaxSize, 0);
       if (len == -1 || len == 0) { // end of stream or timeout
-        if (temp_stream_.is_open()) {
-          temp_stream_.close();
-        }
-        // enque into the writers queue
-        writers_queue_->Push(file_name);
+        end_processing(file_name);
         break;
       }
       buffer_->BuffeLen(len);
@@ -45,14 +49,10 @@ void Worker::run() {
                                            //  pretty print the message
       msg_count++;
       MsgResp res(req.ClientId(), req.MessageId());
-      send_response(client_conn, res);
-      if (msg_count >=
-          kMsgCountPerSchedule) { // Co-operative yielding if the client is
-        if (temp_stream_.is_open()) {
-          temp_stream_.close();
-        }
-        // enque into the writers queue
-        writers_queue_->Push(file_name);
+      if ((send_response(client_conn, res) == -1) ||
+          (msg_count >=
+           kMsgCountPerSchedule)) { // Co-operative yielding if the client is
+        end_processing(file_name);
         job_queue_->Push(client_conn);
         break;
       }
@@ -60,14 +60,14 @@ void Worker::run() {
   }
 }
 
-void Worker::send_response(const util_ns::ConnectionInfo &conn_info,
-                           MsgResp &resp) {
+int Worker::send_response(const util_ns::ConnectionInfo &conn_info,
+                          MsgResp &resp) {
   util_ns::Buffer send_buffer_; //  Wastage of space, use send specific buffers?
   (*reinterpret_cast<uint32_t *>(send_buffer_.buffer_.data())) =
       htonl(resp.ClientId());
   (*reinterpret_cast<uint32_t *>(send_buffer_.buffer_.data() +
                                  sizeof(uint32_t))) = htonl(resp.MessageId());
-  send(conn_info.socket_fd,
-       reinterpret_cast<unsigned char *>(send_buffer_.buffer_.data()),
-       sizeof(resp), 0); // Todo (Daya) error check and log
+  return send(conn_info.socket_fd,
+              reinterpret_cast<unsigned char *>(send_buffer_.buffer_.data()),
+              sizeof(resp), 0);
 }

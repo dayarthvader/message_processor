@@ -23,7 +23,8 @@ public:
 
 private:
   void run();
-  void send_response(const util_ns::ConnectionInfo &, server_ns::MsgResp &resp);
+  void end_processing(const std::string &file_name);
+  int send_response(const util_ns::ConnectionInfo &, server_ns::MsgResp &resp);
   util_ns::SharedQueue<util_ns::ConnectionInfo> *job_queue_{nullptr};
   util_ns::SharedQueue<std::string> *writers_queue_{nullptr};
   std::string logging_dir_{""};
