@@ -3,6 +3,7 @@
 #include "util/buffer.h"
 #include "util/encode_decode.h"
 #include "util/logger.h"
+#include <algorithm>
 #include <arpa/inet.h>
 #include <chrono>
 #include <cstdlib>
@@ -13,11 +14,21 @@
 #include <memory>
 #include <string>
 #include <sys/socket.h>
+#include <vector>
 
 void print_help() {
   std::cout << "./client -n<number of messages> -c <client id> -s <server ip> "
                "-p <server port>\n";
   exit(0);
+}
+
+int median(std::vector<int> data) {
+  std::sort(data.begin(), data.end());
+  if (data.size() % 2) {
+    return (data[data.size() / 2 - 1] + data[data.size() / 2]) / 2;
+  } else {
+    return data[data.size() / 2];
+  }
 }
 
 int main(int argc, char **argv) {
@@ -30,6 +41,7 @@ int main(int argc, char **argv) {
   auto client_fd{0};
   struct sockaddr_in serv_addr;
   serv_addr.sin_family = AF_INET;
+  std::vector<int> rtts;
 
   if (argc < 5) {
     print_help();
@@ -97,7 +109,6 @@ int main(int argc, char **argv) {
   util_ns::Buffer recv_buff;
   // measure average RTT and log
   message_id = 0;
-  uint32_t max_rtt{0};
   for (int i = 0; i < num_msg; i++) {
     std::memset(send_buffer->buffer_.data(), 0, util_ns::kMsgMaxSize);
     util_ns::encode_uint32(send_buffer.get(), 0, (client_id));
@@ -122,15 +133,14 @@ int main(int argc, char **argv) {
     auto rtt{std::chrono::duration_cast<std::chrono::microseconds>(recv_time -
                                                                    send_time)
                  .count()};
-    if (rtt > max_rtt) {
-      max_rtt = rtt;
-    }
+    rtts.push_back(rtt);
     //    filelog->info("recv_time {0:d} max_rtt {1:d}",
     //                 recv_time.time_since_epoch().count(), max_rtt);
     // filelog->info("{0:s}", recv_buff.buffer_.data());
   }
-  filelog->info("{0:d} max_rtt us {1:d}", client_id, max_rtt);
+  auto median_rtt{median(rtts)};
+  filelog->info("{0:d} max_rtt us {1:d}", client_id, median_rtt);
   shutdown(client_id, 2);
-  std::cout << client_id << ',' << connec_time << ',' << max_rtt << '\n';
+  std::cout << client_id << ',' << connec_time << ',' << median_rtt << '\n';
   return 0;
   }

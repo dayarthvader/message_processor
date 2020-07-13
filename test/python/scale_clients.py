@@ -11,11 +11,13 @@ def main():
         command += " -n"+str(num_msg) + " -c"+str(client_id)
         client_obs.append(subprocess.Popen(command.split(' '),stdout=subprocess.PIPE))
     time.sleep(60);
-    for i in (reversed(range(2,251))): 
+    offset = 1
+    for i in (range(251,500)): 
         client_id = i
-        num_msg = i*10
+        num_msg = (i - offset)*10
         command += " -n"+str(num_msg) + " -c"+str(client_id)
         client_obs.append(subprocess.Popen(command.split(' '),stdout=subprocess.PIPE))
+        offset += 1
     analyse = open("../../docs/analysis.csv","w")
     for client in client_obs:
         analyse.write(client.communicate()[0].decode())
