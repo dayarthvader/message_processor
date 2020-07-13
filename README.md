@@ -51,7 +51,13 @@ sudo ./messag_processor
 ```
 sudo ./client -n<number of messages> -c <client id> -s <server ip> -p <server port>
 ```
+
+/var/log/msg_proc_output.txt will have the contents of the messages sent from the client
+
 ### Master test-case
 ```
 sudo python3 message_processor/test/python/scale_clients.py
 ```
+#### Results of master test-case
+/var/log/msg_proc_output.txt will have the contents of the messages sent from the client
+message_processor/docs/analysis.csv will contain csv formatted
